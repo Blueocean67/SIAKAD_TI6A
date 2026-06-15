@@ -1,22 +1,70 @@
 <?php 
 require "koneksi.php";
 
+// 1. PROSES HAPUS DATA (DENGAN PROTEKSI MAHASISWA)
 if (isset($_GET['hapus'])) {
-    $id = $_GET['hapus'];
-    mysqli_query($conn, "DELETE FROM prodi WHERE id = '$id'");
-    header("location:prodi.php?pesan=hapus_sukses");
-    exit;
+    $id = mysqli_real_escape_string($conn, $_GET['hapus']);
+    
+    // Cek apakah ada mahasiswa di prodi ini
+    $queryCek = "SELECT COUNT(*) as total FROM mahasiswa WHERE id_prodi = '$id'";
+    $resultCek = mysqli_query($conn, $queryCek);
+    $dataCek   = mysqli_fetch_assoc($resultCek);
+
+    if ($dataCek['total'] > 0) {
+        // Jika ada mahasiswa, tampilkan error card bawaanmu
+        echo "
+        <!DOCTYPE html>
+        <html lang='id'>
+        <head>
+            <title>Gagal Menghapus</title>
+            <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>
+            <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css'>
+            <style>
+                body { background: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                .alert-card { max-width: 520px; border: none; border-radius: 22px; box-shadow: 0 15px 40px rgba(0,0,0,0.08); overflow: hidden; }
+                .alert-header { background: linear-gradient(135deg, #dc2626, #991b1b); color: white; padding: 1.5rem; }
+                .btn-modern { border-radius: 14px; padding: 10px 20px; font-weight: 600; }
+            </style>
+        </head>
+        <body>
+            <div class='card alert-card'>
+                <div class='alert-header'>
+                    <h4 class='mb-0'><i class='bi bi-exclamation-triangle-fill me-2'></i>Gagal Menghapus</h4>
+                </div>
+                <div class='card-body p-4 text-center'>
+                    <p class='text-muted fs-5'>Masih ada <strong>{$dataCek['total']}</strong> mahasiswa yang terdaftar pada program studi ini.</p>
+                    <p class='text-secondary'>Pindahkan atau hapus data mahasiswa terlebih dahulu sebelum menghapus program studi.</p>
+                    <a href='prodi.php' class='btn btn-danger btn-modern mt-3'><i class='bi bi-arrow-left me-2'></i>Kembali</a>
+                </div>
+            </div>
+        </body>
+        </html>";
+        exit;
+    } else {
+        // Jika bersih, eksekusi hapus
+        mysqli_query($conn, "DELETE FROM prodi WHERE id = '$id'");
+        header("location:prodi.php?pesan=hapus_sukses");
+        exit;
+    }
 }
 
+// 2. PROSES TAMBAH DATA
 if (isset($_POST['tambah'])) {
     $nama = $_POST['nama'];
     $kode = $_POST['kode'];
     $jenjang = $_POST['jenjang'];
-    mysqli_query($conn, "INSERT INTO prodi (nama, kode, jenjang) VALUES ('$nama', '$kode', '$jenjang')");
-    header("location:prodi.php?pesan=tambah_sukses");
-    exit;
+
+    $query = "INSERT INTO prodi (nama, kode, jenjang) VALUES ('$nama', '$kode', '$jenjang')";
+
+    if (mysqli_query($conn, $query)) {
+        header("location:prodi.php?pesan=tambah_sukses");
+        exit;
+    } else {
+        echo "Error: " . mysqli_error($conn);
+    }
 }
 
+// 3. AMBIL DATA UNTUK TABEL
 $sql = "SELECT * FROM prodi ORDER BY id DESC";
 $result = mysqli_query($conn, $sql);
 
@@ -34,6 +82,13 @@ include "_menu.php";
 </style>
 
 <div class="container py-4">
+    <?php if (isset($_GET['pesan'])): ?>
+        <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
+            <strong>Berhasil!</strong> Data prodi telah berhasil <?= $_GET['pesan'] == 'tambah_sukses' ? 'ditambahkan' : 'dihapus'; ?>.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <?php endif; ?>
+
     <div class="card prodi-card">
         <div class="card-header-custom d-flex justify-content-between align-items-center">
             <div>
@@ -61,19 +116,11 @@ include "_menu.php";
                                 <td><span class="badge bg-primary-subtle text-primary badge-modern"><?= $row["kode"]; ?></span></td>
                                 <td>
                                     <?php
-                                  
                                     $j = strtoupper(trim($row["jenjang"])); 
-                                    
-                                    if ($j == 'D3') {
-                                        $bCls = 'bg-warning-subtle text-warning'; $ket = 'Ahli Madya';
-                                    } elseif ($j == 'S1') {
-                                        $bCls = 'bg-success-subtle text-success'; $ket = 'Sarjana';
-                                    } elseif ($j == 'S2') {
-                                        $bCls = 'bg-info-subtle text-info'; $ket = 'Magister';
-                                    } else {
-                                      
-                                        $bCls = 'bg-secondary-subtle text-secondary'; $ket = 'Setting Jenjang di Edit';
-                                    }
+                                    if ($j == 'D3') { $bCls = 'bg-warning-subtle text-warning'; $ket = 'Ahli Madya'; }
+                                    elseif ($j == 'S1') { $bCls = 'bg-success-subtle text-success'; $ket = 'Sarjana'; }
+                                    elseif ($j == 'S2') { $bCls = 'bg-info-subtle text-info'; $ket = 'Magister'; }
+                                    else { $bCls = 'bg-secondary-subtle text-secondary'; $ket = 'Setting Jenjang di Edit'; }
                                     ?>
                                     <span class="badge <?= $bCls ?> badge-modern">
                                         <?= ($row["jenjang"] != "" && $row["jenjang"] != "--") ? $row["jenjang"] : "Kosong"; ?> - <?= $ket ?>
@@ -92,7 +139,6 @@ include "_menu.php";
     </div>
 </div>
 
-
 <div class="modal fade" id="modalTambahProdi" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow" style="border-radius: 20px;">
@@ -100,7 +146,7 @@ include "_menu.php";
                 <h5 class="modal-title">Tambah Prodi Baru</h5>
                 <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form action="" method="POST">
+            <form action="prodi.php" method="POST">
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label fw-bold">Nama Prodi</label>
@@ -116,6 +162,7 @@ include "_menu.php";
                             <option value="" selected disabled>-- Pilih --</option>
                             <option value="D3">D3 - Ahli Madya</option>
                             <option value="S1">S1 - Sarjana</option>
+    
                         </select>
                     </div>
                 </div>
@@ -126,4 +173,5 @@ include "_menu.php";
         </div>
     </div>
 </div>
+
 <?php include "_footer.php"; ?>
