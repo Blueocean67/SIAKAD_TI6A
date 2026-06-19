@@ -115,6 +115,10 @@ $jmlProdi = mysqli_fetch_assoc(mysqli_query($conn, "SELECT COUNT(*) as total FRO
                 <a href="prodi.php" class="btn btn-outline-light px-4 py-2 rounded-pill fw-semibold">
                     <i class="bi bi-mortarboard-fill me-2"></i>Program Studi
                 </a>
+                <div class="mt-3">
+    <a href="auth.php?page=login" class="text-white text-decoration-none me-3"><i class="bi bi-box-arrow-in-right"></i> Login</a>
+    <a href="auth.php?page=signup" class="text-white text-decoration-none"><i class="bi bi-person-plus"></i> Buat Akun</a>
+</div>
             </div>
 
             <div class="col-md-4 text-center">

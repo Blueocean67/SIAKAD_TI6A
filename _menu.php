@@ -36,6 +36,10 @@
                         <i class="bi bi-people me-1"></i>Mahasiswa
                     </a>
                 </li>
+                <div class="navbar-nav ms-auto">
+    <a class="nav-link btn btn-outline-primary btn-sm me-2" href="auth.php?page=login">Login</a>
+    <a class="nav-link btn btn-primary btn-sm text-white" href="auth.php?page=signup">Sign Up</a>
+</div>
 
             </ul>
         </div>
